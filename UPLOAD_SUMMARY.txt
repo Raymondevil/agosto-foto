@@ -1,0 +1,226 @@
+================================================================================
+                    SERVIDOR DE SUBIDAS DE FOTOS - RESUMEN
+================================================================================
+
+✅ TODO ESTÁ CONFIGURADO Y FUNCIONANDO
+
+================================================================================
+                            ARCHIVOS CREADOS
+================================================================================
+
+📄 src/upload-server.ts
+   → Servidor Hono en Node.js para subir/listar/servir/eliminar fotos
+
+📄 src/upload-client.ts
+   → Cliente TypeScript para interactuar con el servidor desde el navegador
+
+📄 src/node.d.ts
+   → Definiciones de tipos para Node.js globals
+
+📄 Dockerfile.upload
+   → Dockerfile específico para el servidor de subidas (Node.js 20)
+
+📄 docker-compose.upload.yml
+   → Configuración Docker Compose con:
+      - Servicio 'uploader' (Node.js en puerto 3001)
+      - Servicio 'cloudflared-uploader' (Túnel Cloudflare)
+
+📄 tsconfig.upload.json
+   → Configuración TypeScript para el servidor de subidas
+
+📄 UPLOAD_SERVER.md
+   → Documentación completa con ejemplos de uso
+
+📄 scripts/deploy-uploader.sh
+   → Script para deployar automáticamente
+
+📄 .gitignore
+   → Actualizado para ignorar directorios srv/ y node_modules/
+
+📄 package.json
+   → Actualizado con:
+      - Dependencia: @hono/node-server
+      - Scripts: build:upload, deploy:upload
+
+================================================================================
+                          ENDPOINTS DISPONIBLES
+================================================================================
+
+🔹 GET  /health                          → Verificar estado del servidor
+🔹 GET  /api/fotos                       → Listar todas las fotos
+🔹 GET  /fotos/{nombre}                  → Ver/descargar una foto
+🔹 POST /api/upload                      → Subir una nueva foto
+🔹 POST /api/fotos/delete                → Eliminar una foto
+
+================================================================================
+                          CÓMO USAR
+================================================================================
+
+1. INICIAR EL SERVIDOR LOCALMENTE:
+
+   docker compose -f docker-compose.upload.yml up -d
+
+2. VERIFICAR QUE FUNCIONA:
+
+   curl http://localhost:3001/health
+
+3. SUBIR UNA FOTO:
+
+   curl -X POST http://localhost:3001/api/upload -F "photo=@mi-foto.jpg"
+
+4. LISTAR FOTOS:
+
+   curl http://localhost:3001/api/fotos
+
+5. VER UNA FOTO:
+
+   curl http://localhost:3001/fotos/1712345678901-abc123.jpg
+
+6. ELIMINAR UNA FOTO:
+
+   curl -X POST http://localhost:3001/api/fotos/delete \
+     -H "Content-Type: application/json" \
+     -d '{"fileName": "1712345678901-abc123.jpg", "password": "tigre2026"}'
+
+================================================================================
+                          CONFIGURACIÓN DE DOCKER
+================================================================================
+
+🐳 Contenedores creados:
+   - eltigre-uploader       → Servidor Node.js en puerto 3001
+   - eltigre-cloudflared-uploader → Túnel Cloudflare conectado a uploader:3000
+
+📁 Volúmenes:
+   - ./srv:/srv            → Persistencia de fotos en tu máquina host
+
+🌐 Cloudflare Tunnel:
+   - Se conecta automáticamente a http://uploader:3000
+   - URL pública generada por Cloudflare
+   - Token ya configurado en docker-compose.upload.yml
+
+================================================================================
+                          VARIABLES DE ENTORNO
+================================================================================
+
+UPLOAD_DIR=/srv           → Directorio donde se guardan las fotos
+PORT=3001                → Puerto del servidor (mapeado a 3000 internamente)
+ADMIN_PASSWORD=tigre2026 → Contraseña para eliminar fotos
+NODE_ENV=production       → Modo de ejecución
+
+================================================================================
+                          INTEGRACIÓN CON TU APLICACIÓN
+================================================================================
+
+1. DESDE TU FRONTEND (JavaScript):
+
+   import { uploadPhoto, listPhotos, deletePhoto } from './upload-client'
+
+   // Subir una foto
+   const fileInput = document.getElementById('photo-input')
+   const file = fileInput.files[0]
+   const response = await uploadPhoto(file, (progress) => {
+     console.log(`Subiendo: ${progress}%`)
+   })
+   
+   if (response.success) {
+     console.log('Foto subida:', response.url)
+   }
+
+2. DESDE TU API PRINCIPAL (Hono):
+
+   // En tu index.tsx, puedes hacer fetch al servidor de subidas
+   const uploadResponse = await fetch('http://localhost:3001/api/upload', {
+     method: 'POST',
+     body: formData
+   })
+   
+   // Luego registrar en D1
+   await c.env.DB.prepare(`
+     INSERT INTO gallery (id, title, url, category, price)
+     VALUES (?, ?, ?, ?, ?)
+   `).bind(
+     `g-${Date.now()}`,
+     'Nueva foto',
+     uploadResponse.url,
+     'general',
+     50
+   ).run()
+
+================================================================================
+                          VALIDACIONES IMPLEMENTADAS
+================================================================================
+
+✅ Tipos de archivo permitidos: JPG, PNG, WebP, GIF
+✅ Tamaño máximo: 10MB por archivo
+✅ Autenticación para eliminación: Contraseña requerida
+✅ Nombres únicos: Timestamp + random string
+✅ Manejo de errores: Respuestas JSON estructuradas
+
+================================================================================
+                          COMANDOS ÚTILES
+================================================================================
+
+# Build y deploy completo
+npm run deploy:upload
+
+# Solo compilar
+npm run build:upload
+
+# Iniciar servicios
+docker compose -f docker-compose.upload.yml up -d
+
+# Detener servicios
+docker compose -f docker-compose.upload.yml down
+
+# Ver logs
+docker compose -f docker-compose.upload.yml logs -f
+
+# Build Docker manual
+docker build -t eltigre-uploader -f Dockerfile.upload .
+
+# Subir múltiples fotos
+for f in *.jpg; do
+  curl -X POST http://localhost:3001/api/upload -F "photo=@$f"
+done
+
+================================================================================
+                          ESTADO ACTUAL
+================================================================================
+
+✅ Servidor compila correctamente
+✅ Endpoints funcionando en pruebas locales
+✅ Docker build exitoso
+✅ Docker Compose configurado
+✅ Cloudflare Tunnel integrado
+✅ Documentación completa
+✅ Tipos TypeScript generados
+✅ Validaciones implementadas
+
+================================================================================
+                          PRÓXIMOS PASOS
+================================================================================
+
+1. Ejecuta: docker compose -f docker-compose.upload.yml up -d
+2. Prueba subir una foto: curl -F "photo=@test.jpg" http://localhost:3001/api/upload
+3. Verifica que la foto esté en: ./srv/
+4. Accede a la foto: http://localhost:3001/fotos/NOMBRE_DEL_ARCHIVO.jpg
+5. Configura el dominio en Cloudflare Zero Trust
+
+================================================================================
+                          NOTAS IMPORTANTES
+================================================================================
+
+⚠️  El directorio ./srv/ NO se sube a Git (está en .gitignore)
+⚠️  Las fotos se guardan directamente en tu máquina host
+⚠️  Cloudflare Tunnel expone tu servidor a internet
+⚠️  Cambia la contraseña ADMIN_PASSWORD en producción
+⚠️  Considera hacer backups regulares de ./srv/
+
+================================================================================
+                          SOPORTE
+================================================================================
+
+📖 Documentación completa: UPLOAD_SERVER.md
+💬 Preguntas: Revisa la documentación o pide ayuda
+
+================================================================================

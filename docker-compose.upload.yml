@@ -1,0 +1,76 @@
+services:
+  # Servidor principal (Hono + Cloudflare Pages)
+  webapp:
+    build: .
+    container_name: eltigre-webapp
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - STORAGE_PATH=/storage
+      - UPLOAD_DIR=/srv
+    volumes:
+      - ./srv:/storage
+    expose:
+      - "3000"
+    networks:
+      - eltigre-network
+
+  # Servidor de subidas de fotos (Node.js)
+  uploader:
+    build:
+      context: .
+      dockerfile: Dockerfile.upload
+    container_name: eltigre-uploader
+    restart: always
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - UPLOAD_DIR=/srv
+      - ADMIN_PASSWORD=tigre2026
+      - PUBLIC_URL=http://localhost:3001
+      - D1_REGISTER_URL=http://webapp:3000/api/gallery/register
+      - D1_UPLOAD_PASSWORD=tigre2026
+    volumes:
+      # Montar el directorio local ./srv en /srv del contenedor
+      - ./srv:/srv
+    ports:
+      - "3001:3000"
+    expose:
+      - "3000"
+    depends_on:
+      - webapp
+    networks:
+      - eltigre-network
+
+  # Cloudflare Tunnel para el webapp principal
+  cloudflared-webapp:
+    image: cloudflare/cloudflared:latest
+    container_name: eltigre-cloudflared-webapp
+    restart: always
+    environment:
+      - TUNNEL_TOKEN='eyJhIjoiMGQxNjc4MjExNjZkYTA3YTIyYTMwODUyZWI2NTYxNDYiLCJ0IjoiOGM1ZTUyMDItYjBhZi00NWNiLThlYTctMWJkZGYwMTQ4MjI1IiwicyI6Im1VOWg4VGN6V21tSzR5ZjlZZdKWDBTc2c2RUJzY1d2NmY0TWFuQnM2MEdlcnBJckRXS2pjVG5EMjZON1Q0YnVZQU4xOEF2R09DWDNMYUd6Y2NGKytRPT0ifQ=='
+    command: tunnel --no-autoupdate run --url http://webapp:3000
+    depends_on:
+      - webapp
+    networks:
+      - eltigre-network
+
+  # Cloudflare Tunnel para el uploader
+  cloudflared-uploader:
+    image: cloudflare/cloudflared:latest
+    container_name: eltigre-cloudflared-uploader
+    restart: always
+    environment:
+      - TUNNEL_TOKEN='eyJhIjoiMGQxNjc4MjExNjZkYTA3YTIyYTMwODUyZWI2NTYxNDYiLCJ0IjoiOGM1ZTUyMDItYjBhZi00NWNiLThlYTctMWJkZGYwMTQ4MjI1IiwicyI6Im1VOWg4VGN6V21tSzR5ZjlZZdKWDBTc2c2RUJzY1d2NmY0TWFuQnM2MEdlcnBJckRXS2pjVG5EMjZON1Q0YnVZQU4xOEF2R09DWDNMYUd6Y2NGKytRPT0ifQ=='
+    command: tunnel --no-autoupdate run --url http://uploader:3000
+    depends_on:
+      - uploader
+      - webapp
+    networks:
+      - eltigre-network
+
+networks:
+  eltigre-network:
+    driver: bridge

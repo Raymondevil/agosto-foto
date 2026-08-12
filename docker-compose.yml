@@ -1,0 +1,28 @@
+version: "3.8"
+
+services:
+  # CONTENEDOR 1: Tu Aplicación Web (Hono + Cloudflare Pages)
+  webapp:
+    build: .
+    container_name: eltigre-webapp
+    restart: always
+    environment:
+      - PORT=3000
+      - NODE_ENV=production
+      - UPLOAD_DIR=/srv
+    volumes:
+      # Montamos la carpeta física ./srv de tu PC en la carpeta /srv del contenedor
+      - ./srv:/srv
+    expose:
+      - "3000"
+
+  # CONTENEDOR 2: Cloudflare Tunnel (cloudflared)
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: eltigre
+    restart: always
+    environment:
+      - TUNNEL_TOKEN='eyJhIjoiMGQxNjc4MjExNjZkYTA3YTIyYTMwODUyZWI2NTYxNDYiLCJ0IjoiOGM1ZTUyMDItYjBhZi00NWNiLThlYTctMWJkZGYwMTQ4MjI1IiwicyI6Im1VOWg4VGN6V21tSzR5ZjlZZDdKWDBTc2c2RUJzY1d2NmY0TWFuQnM2MEdlcnBJckRXS2pjVG5EMjZON1Q0YnVZQU4xOEF2R09DWDNMYUd6Y2NGKytRPT0ifQ=='
+    command: tunnel --no-autoupdate run
+    depends_on:
+      - webapp

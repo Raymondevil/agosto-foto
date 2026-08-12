@@ -1,0 +1,60 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+.env.production
+.dev.vars
+
+# IDE
+.idea/
+!.idea/workspace.xml
+!.idea/usage.statistics.xml
+!.idea/shelf
+.vscode/
+!.vscode/launch.json
+!.vscode/*.code-snippets
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Wrangler state
+.wrangler/
+
+# Local database files
+*.db
+*.db-shm
+*.db-wal
+
+# Uploaded files (keep in local volume, not in git)
+srv/
+
+# Temporary files
+tmp/
+temp/
+
+# Backup files
+*.backup
+*.bak
+
+# Yarn
+.yarn/
+!.yarn/releases
+
+# TypeScript build
+*.tsbuildinfo
