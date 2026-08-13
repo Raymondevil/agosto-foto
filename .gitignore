@@ -43,7 +43,8 @@ lerna-debug.log*
 
 # Uploaded files (keep in local volume, not in git)
 srv/
-
+public/static/photos
+public/static/videos
 # Temporary files
 tmp/
 temp/
@@ -58,3 +59,4 @@ temp/
 
 # TypeScript build
 *.tsbuildinfo
+
